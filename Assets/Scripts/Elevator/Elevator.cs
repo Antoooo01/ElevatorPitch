@@ -242,6 +242,7 @@ public class Elevator : MonoBehaviour
 			return true;
 		}
 
+		FlipDirection();
 
 		_state = eElevatorState.STATIONARY;
 		return false;
