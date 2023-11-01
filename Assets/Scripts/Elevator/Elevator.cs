@@ -11,17 +11,30 @@ enum eElevatorState
 	WAITING = 2,
 }
 
+enum eDirection
+{
+	UP = 0,
+	DOWN = 1,
+}
+
 public class Elevator : MonoBehaviour
 {
-	public float moveSpeed;
-	[SerializeField] private int _currentFloor = 0;
-	[SerializeField] private List<ElevatorPoint> _movePoints;
+	[SerializeField, Tooltip("Speed of elevator")]
+	private float _moveSpeed = 3;
+	[SerializeField, Tooltip("Time until elevator starts after entering")]
+	private float _waitStart = 2;
+	[SerializeField, Tooltip("Time until elevator continues after reaching its current target")]
+	private float _waitContinue = 5;
+	[SerializeField, Tooltip("Signifies the floor it starts on")]
+	private int _currentFloor;
+	[SerializeField, Tooltip("Custom list of points the elevator travels between\nOrder is significant")]
+	private List<ElevatorPoint> _movePoints;
 
 
 	private ElevatorQueueEvent _queueEvent = new ElevatorQueueEvent();
 
 	private eElevatorState _state = eElevatorState.STATIONARY;
-	private bool _currentDirection = true; //could be replaced with an enum for readability
+	private eDirection _currentDirection = eDirection.UP;
 	private int _targetFloor;
 
 	private List<ElevatorPoint> _queuePointsAbove = new List<ElevatorPoint>();
@@ -48,18 +61,15 @@ public class Elevator : MonoBehaviour
 		switch (_state)
 		{
 			case eElevatorState.STATIONARY:
+				//if (_queuePointsAbove.Count > 0 || _queuePointsBelow.Count > 0)
+				//{
+				//	//TargetLogic();
+				//	_waitTimer = 2;
+				//	_state = eElevatorState.WAITING;
+				//}
+
 				break;
 			case eElevatorState.MOVING:
-
-				if (AtTarget())
-				{
-					_currentFloor = _targetFloor;
-
-					RemoveTarget();
-					_waitTimer = 5; //Todo: make variable instead of hardcoded
-					_state = eElevatorState.WAITING;
-					break;
-				}
 
 				Move();
 
@@ -72,8 +82,17 @@ public class Elevator : MonoBehaviour
 					break;
 				}
 
-				TargetLogic();
 				print("timer done");
+
+				if (SetValidTarget())
+				{
+					_state = eElevatorState.MOVING;
+				}
+				else
+				{ 
+					_state = eElevatorState.STATIONARY;
+				}
+
 				break;
 		}
 		
@@ -99,37 +118,35 @@ public class Elevator : MonoBehaviour
 
 	private void SimpleFloorPick()
 	{
-		bool floorFound = false;
-		if (_currentDirection)
+		if (_currentDirection == eDirection.UP)
 		{
 			if (_currentFloor + 1 < _movePoints.Count)
 			{
 				AddQueuePoint(_movePoints[_currentFloor + 1]);
+				return;
 			}
 		}
-		else if (!_currentDirection)
+		else if (_currentDirection == eDirection.DOWN)
 		{
-			if (_currentFloor - 1 > 0)
+			if (_currentFloor - 1 >= 0)
 			{
 				AddQueuePoint(_movePoints[_currentFloor - 1]);
+				return;
 			}
 		}
 
-		if (floorFound)
-			return;
+		FlipDirection();
 
-		_currentDirection = !_currentDirection;
-
-		if (_currentDirection)
+		if (_currentDirection == eDirection.UP)
 		{
 			if (_currentFloor + 1 < _movePoints.Count)
 			{
 				AddQueuePoint(_movePoints[_currentFloor + 1]);
 			}
 		}
-		else if (!_currentDirection)
+		else if (_currentDirection == eDirection.DOWN)
 		{
-			if (_currentFloor - 1 > 0)
+			if (_currentFloor - 1 >= 0)
 			{
 				AddQueuePoint(_movePoints[_currentFloor - 1]);
 			}
@@ -138,13 +155,13 @@ public class Elevator : MonoBehaviour
 
 	private void AddQueuePoint(ElevatorPoint point)
 	{
-		if (_movePoints.IndexOf(point) < _targetFloor)
+		if (point.index < _targetFloor)
 		{
 			if (!_queuePointsBelow.Contains(point))
 			{
 				_queuePointsBelow.Add(point);
 				_queuePointsBelow.Sort((x, y) => y.index.CompareTo(x.index));
-				TargetLogic();
+				SetValidTarget();
 			}
 		}
 		else
@@ -153,58 +170,81 @@ public class Elevator : MonoBehaviour
 			{
 				_queuePointsAbove.Add(point);
 				_queuePointsAbove.Sort((x, y) => x.index.CompareTo(y.index));
-				TargetLogic();
+				SetValidTarget();
 			}
 		}
 	}
 
 	private void Move()
 	{
-		transform.position += VectorToTarget().normalized * moveSpeed * Time.deltaTime;
+		//TODO: remake to keep currentfloor accurate, and one floor at a time
+
+		//todo: per floor basis instead
+		transform.position += VectorToTarget().normalized * _moveSpeed * Time.deltaTime;
+
+		if (AtTarget())
+		{
+			_currentFloor = _targetFloor; //make independant of target
+
+			RemoveTarget();
+			_waitTimer = _waitContinue;
+			_state = eElevatorState.WAITING;
+		}
+
 	}
 
-	private void TargetLogic()
+	private bool SetValidTarget()
 	{
-		//Todo: make this very mush more readable
+		//Todo: make this very much more readable
 		bool targetFound = false;
 
-		if(_currentDirection && _queuePointsAbove.Count > 0)
+		if(_currentDirection == eDirection.UP && _queuePointsAbove.Count > 0)
 		{
-			_targetFloor = _movePoints.IndexOf(_queuePointsAbove[0]);
+			_targetFloor = _queuePointsAbove[0].index;
 			targetFound = true;
 		}
-		else if (!_currentDirection && _queuePointsBelow.Count > 0)
+		else if (_currentDirection == eDirection.DOWN && _queuePointsBelow.Count > 0)
 		{
-			_targetFloor = _movePoints.IndexOf(_queuePointsBelow[0]);
-			targetFound = true;
-		}
-
-		if (targetFound)
-		{
-			_state = eElevatorState.MOVING;
-			return;
-		}
-
-		_currentDirection = !_currentDirection;
-
-		if (_currentDirection && _queuePointsAbove.Count > 0)
-		{
-			_targetFloor = _movePoints.IndexOf(_queuePointsAbove[0]);
-			targetFound = true;
-		}
-		else if (!_currentDirection && _queuePointsBelow.Count > 0)
-		{
-			_targetFloor = _movePoints.IndexOf(_queuePointsBelow[0]);
+			_targetFloor = _queuePointsBelow[0].index;
 			targetFound = true;
 		}
 
 		if (targetFound)
 		{
-			_state = eElevatorState.MOVING;
-			return;
+			if (_state == eElevatorState.STATIONARY)
+			{ 
+				_waitTimer = _waitStart;
+				_state = eElevatorState.WAITING;
+			}
+			return true;
 		}
+
+		FlipDirection();
+
+		if (_currentDirection == eDirection.UP && _queuePointsAbove.Count > 0)
+		{
+			_targetFloor = _queuePointsAbove[0].index;
+			targetFound = true;
+		}
+		else if (_currentDirection == eDirection.DOWN && _queuePointsBelow.Count > 0)
+		{
+			_targetFloor = _queuePointsBelow[0].index;
+			targetFound = true;
+		}
+
+		if (targetFound)
+		{
+			if (_state == eElevatorState.STATIONARY)
+			{
+				_waitTimer = _waitStart;
+				_state = eElevatorState.WAITING;
+			}
+			return true;
+		}
+
 
 		_state = eElevatorState.STATIONARY;
+		return false;
 	}
 
 	private bool AtTarget()
@@ -224,5 +264,15 @@ public class Elevator : MonoBehaviour
 
 		else if (_queuePointsBelow.Contains(_movePoints[_targetFloor]))
 			_queuePointsBelow.Remove(_movePoints[_targetFloor]);
+	}
+
+	private void FlipDirection()
+	{
+		if (_currentDirection == eDirection.UP)
+			_currentDirection = eDirection.DOWN;
+		else
+			_currentDirection = eDirection.UP;
+		
+
 	}
 }
