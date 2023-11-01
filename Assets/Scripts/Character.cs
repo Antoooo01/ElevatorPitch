@@ -5,26 +5,28 @@ using UnityEngine;
 
 public class Character : MonoBehaviour
 {
-	private CharacterController controller;
+	[SerializeField, Tooltip("Time until elevator starts after entering")]
+	private float _speed;
+	[SerializeField, Tooltip("Time until elevator starts after entering")]
+	private float _fallSpeed;
 
-	public float speed;
-	public float fallSpeed;
+	private CharacterController controller;
 
 	// Start is called before the first frame update
 	void Start()
 	{
 		controller = GetComponent<CharacterController>();
-    }
+	}
 
 	// Update is called once per frame
 	void Update()
 	{
 		Vector3 move = new Vector3(Input.GetAxis("Horizontal"), 0, Input.GetAxis("Vertical"));
 
-		controller.Move(Time.deltaTime * move * speed);
+		controller.Move(Time.deltaTime * move * _speed);
 
 		//fake gravity
-		Vector3 gravity = new Vector3(0, -fallSpeed, 0);
+		Vector3 gravity = new Vector3(0, -_fallSpeed, 0);
 		controller.Move(gravity * Time.deltaTime);
 	}
 }

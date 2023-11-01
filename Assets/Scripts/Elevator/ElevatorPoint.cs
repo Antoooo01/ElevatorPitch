@@ -7,9 +7,9 @@ using UnityEngine.UIElements;
 public class ElevatorPoint : MonoBehaviour
 {
 	private ElevatorQueueEvent _queueEvent;
-    public ElevatorQueueEvent queueEvent
-    { set { _queueEvent = value; } }
-    private int _index;
+	public ElevatorQueueEvent queueEvent
+	{ set { _queueEvent = value; } }
+	private int _index;
 	public int index
 	{ get { return _index; } set { _index = value; } }
 
