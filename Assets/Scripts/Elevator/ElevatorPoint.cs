@@ -7,10 +7,10 @@ using UnityEngine.UIElements;
 public class ElevatorPoint : MonoBehaviour
 {
 	private ElevatorQueueEvent _queueEvent;
-	public ElevatorQueueEvent queueEvent
+	public ElevatorQueueEvent QueueEvent
 	{ set { _queueEvent = value; } }
 	private int _index;
-	public int index
+	public int Index
 	{ get { return _index; } set { _index = value; } }
 
 	private void OnTriggerEnter(Collider other)

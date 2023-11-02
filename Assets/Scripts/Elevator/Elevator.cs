@@ -19,6 +19,8 @@ enum eDirection
 
 public class Elevator : MonoBehaviour
 {
+	[SerializeField, Tooltip("UI to choose floors\nOptional")]
+	private FloorPicker _floorPicker;
 	[SerializeField, Tooltip("Speed of elevator")]
 	private float _moveSpeed = 3;
 	[SerializeField, Tooltip("Time until elevator starts after entering")]
@@ -29,6 +31,10 @@ public class Elevator : MonoBehaviour
 	private int _currentFloor;
 	[SerializeField, Tooltip("Custom list of points the elevator travels between\nOrder is significant")]
 	private List<ElevatorPoint> _movePoints;
+
+	public int FloorCount
+	{ get => _movePoints.Count; }
+	
 
 
 	private ElevatorQueueEvent _queueEvent = new ElevatorQueueEvent();
@@ -50,8 +56,16 @@ public class Elevator : MonoBehaviour
 
 		for(int i = 0; i < _movePoints.Count; i++)
 		{
-			_movePoints[i].queueEvent = _queueEvent;
-			_movePoints[i].index = i;
+			_movePoints[i].QueueEvent = _queueEvent;
+			_movePoints[i].Index = i;
+		}
+
+
+		if (_floorPicker)
+		{
+			_floorPicker.SetElevator(this);
+			_floorPicker.MakeButtons(FloorCount);
+			_floorPicker.SetActive(false);
 		}
 	}
 
@@ -61,13 +75,6 @@ public class Elevator : MonoBehaviour
 		switch (_state)
 		{
 			case eElevatorState.STATIONARY:
-				//if (_queuePointsAbove.Count > 0 || _queuePointsBelow.Count > 0)
-				//{
-				//	//TargetLogic();
-				//	_waitTimer = 2;
-				//	_state = eElevatorState.WAITING;
-				//}
-
 				break;
 			case eElevatorState.MOVING:
 
@@ -82,7 +89,7 @@ public class Elevator : MonoBehaviour
 					break;
 				}
 
-				print("timer done");
+				//print("timer done");
 
 				if (SetValidTarget())
 				{
@@ -103,8 +110,13 @@ public class Elevator : MonoBehaviour
 		if (other.CompareTag("Player"))
 		{
 			//print("Entered");
+			if (_floorPicker)
+			{
+				_floorPicker.SetActive(true);
+				return;
+			}
 
-			SimpleFloorPick();
+			SimplePickFloor();
 		}
 	}
 
@@ -113,10 +125,17 @@ public class Elevator : MonoBehaviour
 		if (other.CompareTag("Player"))
 		{
 			//print("Exited");
+			if (_floorPicker)
+				_floorPicker.SetActive(false);
 		}
 	}
 
-	private void SimpleFloorPick()
+	public void PickFloor(float floor)
+	{
+		AddQueuePoint(_movePoints[(int)floor]);
+	}
+
+	private void SimplePickFloor()
 	{
 		if (_currentDirection == eDirection.UP)
 		{
@@ -155,12 +174,12 @@ public class Elevator : MonoBehaviour
 
 	private void AddQueuePoint(ElevatorPoint point)
 	{
-		if (point.index < _targetFloor)
+		if (point.Index < _targetFloor)
 		{
 			if (!_queuePointsBelow.Contains(point))
 			{
 				_queuePointsBelow.Add(point);
-				_queuePointsBelow.Sort((x, y) => y.index.CompareTo(x.index));
+				_queuePointsBelow.Sort((x, y) => y.Index.CompareTo(x.Index));
 				SetValidTarget();
 			}
 		}
@@ -169,7 +188,7 @@ public class Elevator : MonoBehaviour
 			if (!_queuePointsAbove.Contains(point))
 			{
 				_queuePointsAbove.Add(point);
-				_queuePointsAbove.Sort((x, y) => x.index.CompareTo(y.index));
+				_queuePointsAbove.Sort((x, y) => x.Index.CompareTo(y.Index));
 				SetValidTarget();
 			}
 		}
@@ -177,15 +196,29 @@ public class Elevator : MonoBehaviour
 
 	private void Move()
 	{
-		//TODO: remake to keep currentfloor accurate, and one floor at a time
+		if (_currentDirection == eDirection.UP)
+		{
+			int nextfloor = _currentFloor + 1;
+			transform.position += VectorBetweenFloors(_currentFloor, nextfloor).normalized * _moveSpeed * Time.deltaTime;
 
-		//todo: per floor basis instead
-		transform.position += VectorToTarget().normalized * _moveSpeed * Time.deltaTime;
+			if ((transform.position - _movePoints[nextfloor].transform.position).magnitude < 0.01)
+			{
+				_currentFloor++;
+			}
+		}
+		else
+		{
+			int nextfloor = _currentFloor - 1;
+			transform.position += VectorBetweenFloors(_currentFloor, nextfloor).normalized * _moveSpeed * Time.deltaTime;
+
+			if ((transform.position - _movePoints[nextfloor].transform.position).magnitude < 0.01)
+			{
+				_currentFloor--;
+			}
+		}
 
 		if (AtTarget())
 		{
-			_currentFloor = _targetFloor; //make independant of target
-
 			RemoveTarget();
 			_waitTimer = _waitContinue;
 			_state = eElevatorState.WAITING;
@@ -200,12 +233,12 @@ public class Elevator : MonoBehaviour
 
 		if(_currentDirection == eDirection.UP && _queuePointsAbove.Count > 0)
 		{
-			_targetFloor = _queuePointsAbove[0].index;
+			_targetFloor = _queuePointsAbove[0].Index;
 			targetFound = true;
 		}
 		else if (_currentDirection == eDirection.DOWN && _queuePointsBelow.Count > 0)
 		{
-			_targetFloor = _queuePointsBelow[0].index;
+			_targetFloor = _queuePointsBelow[0].Index;
 			targetFound = true;
 		}
 
@@ -223,12 +256,12 @@ public class Elevator : MonoBehaviour
 
 		if (_currentDirection == eDirection.UP && _queuePointsAbove.Count > 0)
 		{
-			_targetFloor = _queuePointsAbove[0].index;
+			_targetFloor = _queuePointsAbove[0].Index;
 			targetFound = true;
 		}
 		else if (_currentDirection == eDirection.DOWN && _queuePointsBelow.Count > 0)
 		{
-			_targetFloor = _queuePointsBelow[0].index;
+			_targetFloor = _queuePointsBelow[0].Index;
 			targetFound = true;
 		}
 
@@ -255,7 +288,12 @@ public class Elevator : MonoBehaviour
 
 	private Vector3 VectorToTarget()
 	{
-		return (_movePoints[_targetFloor].transform.position - transform.position);
+		return VectorBetweenFloors(_currentFloor, _targetFloor);
+	}
+
+	private Vector3 VectorBetweenFloors(int floorStart, int floorEnd)
+	{
+		return _movePoints[floorEnd].transform.position - _movePoints[floorStart].transform.position;
 	}
 
 	private void RemoveTarget()
@@ -273,7 +311,5 @@ public class Elevator : MonoBehaviour
 			_currentDirection = eDirection.DOWN;
 		else
 			_currentDirection = eDirection.UP;
-		
-
 	}
 }
