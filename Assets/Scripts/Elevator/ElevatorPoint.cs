@@ -13,9 +13,13 @@ public class ElevatorPoint : MonoBehaviour
 	public int index
 	{ get { return _index; } set { _index = value; } }
 
-	//test purposes
-	//public void Start()
-	//{
-	//	_queueEvent.Invoke(this);
-	//}
+	private void OnTriggerEnter(Collider other)
+	{
+		CallElevator();
+	}
+
+	private void CallElevator()
+	{
+		_queueEvent.Invoke(this);
+	}
 }
