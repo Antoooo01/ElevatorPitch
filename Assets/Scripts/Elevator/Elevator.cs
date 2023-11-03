@@ -128,7 +128,7 @@ public class Elevator : MonoBehaviour
 	{
 		if (other.CompareTag("Player"))
 		{
-			other.transform.SetParent(transform, true);
+			other.transform.SetParent(null, true);
 
 			//print("Exited");
 			if (_floorPicker)
