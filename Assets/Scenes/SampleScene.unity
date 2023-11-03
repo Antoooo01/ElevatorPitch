@@ -763,6 +763,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: FloorPickerCanvas
       objectReference: {fileID: 0}
+    - target: {fileID: 8059148632525637780, guid: ea7f194181ef3d145a28a468c0efeb4c, type: 3}
+      propertyPath: m_BlocksRaycasts
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

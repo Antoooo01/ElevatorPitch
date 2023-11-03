@@ -130,9 +130,9 @@ public class Elevator : MonoBehaviour
 		}
 	}
 
-	public void PickFloor(float floor)
+	public void PickFloor(int floor)
 	{
-		AddQueuePoint(_movePoints[(int)floor]);
+		AddQueuePoint(_movePoints[floor]);
 	}
 
 	private void SimplePickFloor()
@@ -174,7 +174,7 @@ public class Elevator : MonoBehaviour
 
 	private void AddQueuePoint(ElevatorPoint point)
 	{
-		if (point.Index < _targetFloor)
+		if (IsBelow(point.Index))
 		{
 			if (!_queuePointsBelow.Contains(point))
 			{
@@ -194,8 +194,28 @@ public class Elevator : MonoBehaviour
 		}
 	}
 
+	private bool IsBelow(int index)
+	{
+		if (_currentDirection == eDirection.UP)
+		{
+			return index <= _currentFloor;
+		}
+		else
+		{
+			return index < _currentFloor;
+		}
+	}
+
 	private void Move()
 	{
+		if (AtTarget())
+		{
+			RemoveTarget();
+			_waitTimer = _waitContinue;
+			_state = eElevatorState.WAITING;
+			return;
+		}
+
 		if (_currentDirection == eDirection.UP)
 		{
 			int nextfloor = _currentFloor + 1;
@@ -216,68 +236,43 @@ public class Elevator : MonoBehaviour
 				_currentFloor--;
 			}
 		}
-
-		if (AtTarget())
-		{
-			RemoveTarget();
-			_waitTimer = _waitContinue;
-			_state = eElevatorState.WAITING;
-		}
-
 	}
 
 	private bool SetValidTarget()
 	{
-		//Todo: make this very much more readable
-		bool targetFound = false;
-
-		if(_currentDirection == eDirection.UP && _queuePointsAbove.Count > 0)
+		//for loop to minimize repetetive code, since it might check both directions
+		for (int i = 0; i < 2; i++)
 		{
-			_targetFloor = _queuePointsAbove[0].Index;
-			targetFound = true;
-		}
-		else if (_currentDirection == eDirection.DOWN && _queuePointsBelow.Count > 0)
-		{
-			_targetFloor = _queuePointsBelow[0].Index;
-			targetFound = true;
-		}
-
-		if (targetFound)
-		{
-			if (_state == eElevatorState.STATIONARY)
-			{ 
-				_waitTimer = _waitStart;
-				_state = eElevatorState.WAITING;
+			if (TargetInCurrentDirection())
+			{
+				if (_state == eElevatorState.STATIONARY)
+				{
+					_waitTimer = _waitStart;
+					_state = eElevatorState.WAITING;
+				}
+				return true;
 			}
-			return true;
+
+			FlipDirection();
 		}
 
-		FlipDirection();
+		_state = eElevatorState.STATIONARY;
+		return false;
+	}
 
+	private bool TargetInCurrentDirection()
+	{
 		if (_currentDirection == eDirection.UP && _queuePointsAbove.Count > 0)
 		{
 			_targetFloor = _queuePointsAbove[0].Index;
-			targetFound = true;
+			 return true;
 		}
 		else if (_currentDirection == eDirection.DOWN && _queuePointsBelow.Count > 0)
 		{
 			_targetFloor = _queuePointsBelow[0].Index;
-			targetFound = true;
-		}
-
-		if (targetFound)
-		{
-			if (_state == eElevatorState.STATIONARY)
-			{
-				_waitTimer = _waitStart;
-				_state = eElevatorState.WAITING;
-			}
 			return true;
 		}
 
-		FlipDirection();
-
-		_state = eElevatorState.STATIONARY;
 		return false;
 	}
 
