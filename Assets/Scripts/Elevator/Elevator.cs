@@ -19,7 +19,8 @@ enum eDirection
 
 public class Elevator : MonoBehaviour
 {
-	[SerializeField, Tooltip("UI to choose floors\nOptional")]
+
+    [SerializeField, Tooltip("UI to choose floors\nOptional")]
 	private FloorPicker _floorPicker;
 	[SerializeField, Tooltip("Speed of elevator")]
 	private float _moveSpeed = 3;
@@ -29,6 +30,8 @@ public class Elevator : MonoBehaviour
 	private float _waitContinue = 5;
 	[SerializeField, Tooltip("Signifies the floor it starts on")]
 	private int _currentFloor;
+    [SerializeField, Tooltip("How close the elevator needs to be to arrive\nLower is more accurate")]
+    private float _distanceSensitivity = 0.01f;
 	[SerializeField, Tooltip("Custom list of points the elevator travels between\nOrder is significant")]
 	private List<ElevatorPoint> _movePoints;
 
@@ -47,7 +50,6 @@ public class Elevator : MonoBehaviour
 	private List<ElevatorPoint> _queuePointsBelow = new List<ElevatorPoint>();
 
 	private float _waitTimer = 0;
-
 
 	// Start is called before the first frame update
 	void Start()
@@ -225,7 +227,7 @@ public class Elevator : MonoBehaviour
 			int nextfloor = _currentFloor + 1;
 			transform.position += VectorBetweenFloors(_currentFloor, nextfloor).normalized * _moveSpeed * Time.deltaTime;
 
-			if ((transform.position - _movePoints[nextfloor].transform.position).magnitude < 0.01)
+			if ((transform.position - _movePoints[nextfloor].transform.position).magnitude < _distanceSensitivity)
 			{
 				_currentFloor++;
 			}
@@ -235,7 +237,7 @@ public class Elevator : MonoBehaviour
 			int nextfloor = _currentFloor - 1;
 			transform.position += VectorBetweenFloors(_currentFloor, nextfloor).normalized * _moveSpeed * Time.deltaTime;
 
-			if ((transform.position - _movePoints[nextfloor].transform.position).magnitude < 0.01)
+			if ((transform.position - _movePoints[nextfloor].transform.position).magnitude < _distanceSensitivity)
 			{
 				_currentFloor--;
 			}
@@ -282,7 +284,7 @@ public class Elevator : MonoBehaviour
 
 	private bool AtTarget()
 	{
-		return VectorToTarget().magnitude < 0.01;
+		return VectorToTarget().magnitude < _distanceSensitivity;
 	}
 
 	private Vector3 VectorToTarget()
