@@ -20,7 +20,7 @@ enum eDirection
 public class Elevator : MonoBehaviour
 {
 
-    [SerializeField, Tooltip("UI to choose floors\nOptional")]
+	[SerializeField, Tooltip("UI to choose floors\nOptional")]
 	private FloorPicker _floorPicker;
 	[SerializeField, Tooltip("Speed of elevator")]
 	private float _moveSpeed = 3;
@@ -30,8 +30,8 @@ public class Elevator : MonoBehaviour
 	private float _waitContinue = 5;
 	[SerializeField, Tooltip("Signifies the floor it starts on")]
 	private int _currentFloor;
-    [SerializeField, Tooltip("How close the elevator needs to be to arrive\nLower is more accurate")]
-    private float _distanceSensitivity = 0.01f;
+	[SerializeField, Tooltip("How close the elevator needs to be to arrive\nLower is more accurate")]
+	private float _distanceSensitivity = 0.01f;
 	[SerializeField, Tooltip("Custom list of points the elevator travels between\nOrder is significant")]
 	private List<ElevatorPoint> _movePoints;
 
@@ -216,6 +216,7 @@ public class Elevator : MonoBehaviour
 	{
 		if (AtTarget())
 		{
+			SnapToTarget();
 			RemoveTarget();
 			_waitTimer = _waitContinue;
 			_state = eElevatorState.WAITING;
@@ -242,6 +243,11 @@ public class Elevator : MonoBehaviour
 				_currentFloor--;
 			}
 		}
+	}
+
+	private void SnapToTarget()
+	{
+		transform.position = _movePoints[_targetFloor].transform.position;
 	}
 
 	private bool SetValidTarget()

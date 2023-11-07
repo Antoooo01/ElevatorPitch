@@ -5,9 +5,9 @@ using UnityEngine;
 
 public class Character : MonoBehaviour
 {
-	[SerializeField, Tooltip("Time until elevator starts after entering")]
+	[SerializeField, Tooltip("Speed of moving")]
 	private float _speed;
-	[SerializeField, Tooltip("Time until elevator starts after entering")]
+	[SerializeField, Tooltip("Speed of falling")]
 	private float _fallSpeed;
 
 	private CharacterController controller;
